@@ -22,10 +22,10 @@ sh: ## コンテナにbashで入る
 	docker-compose exec $(SERVICE) bash
 
 composer-install: ## composer install を実行
-	docker-compose exec $(SERVICE) composer install
+	docker-compose exec $(SERVICE) sh -c "cd /var/www/html && composer install"
 
 composer-update: ## composer update を実行
-	docker-compose exec $(SERVICE) composer update
+	docker-compose exec $(SERVICE) sh -c "cd /var/www/html && composer update"
 
 rebuild: ## イメージ・ボリュームを全削除して再ビルド
 	docker-compose down --rmi all --volumes --remove-orphans

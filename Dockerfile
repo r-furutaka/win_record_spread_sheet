@@ -10,8 +10,15 @@ RUN apt-get update && apt-get install -y \
 # Composerをインストール
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# 必要なポートを開放
-EXPOSE 80
+# DocumentRootをpublicに変更する
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+
+# Apacheの設定を書き換え
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf && \
+    sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # 作業ディレクトリ
 WORKDIR /var/www/html
+
+# 必要なポートを開放
+EXPOSE 80
