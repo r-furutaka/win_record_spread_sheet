@@ -1,5 +1,5 @@
 # PHP公式イメージ（Apache付き）をベースにする
-FROM php:8.2-apache
+FROM php:8.2-apache-bullseye
 
 # 必要に応じてパッケージをインストール
 RUN apt-get update && apt-get install -y \
