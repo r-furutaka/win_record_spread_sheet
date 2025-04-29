@@ -7,7 +7,13 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__. '/../');
 $dotenv->load();
 
-// 環境変数を表示してみる
-echo "APP_NAME (_ENV): " . $_ENV['APP_NAME'] . "\n";      // MyApp
+$client = new Google\Client();
+$client->setAuthConfig("../google-api-key.json");
+$client->setScopes(Google_Service_Sheets::SPREADSHEETS);
 
-phpinfo();
+$service = new Google_Service_Sheets($client);
+$spreadsheet_id = $_ENV['SPREADSHEET_ID'];
+$response = $service->spreadsheets->get($spreadsheet_id);
+echo $response->properties->title; // タイトル
+
+
