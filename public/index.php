@@ -1,19 +1,13 @@
 <?php
 require __DIR__.'/../vendor/autoload.php';
+require __DIR__.'/../app/Controller/IndexController.php';
 
-use Dotenv\Dotenv;
+$indexController = new IndexController();
 
-// .envファイルを読み込む
-$dotenv = Dotenv::createImmutable(__DIR__. '/../');
-$dotenv->load();
+// add_decktypeアクションがPOSTされた場合
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_decktype') {
+    $decktype = htmlspecialchars($_POST['decktype'], ENT_QUOTES, 'UTF-8');
+    $indexController->addDeckType($decktype);
+}
 
-$client = new Google\Client();
-$client->setAuthConfig("../google-api-key.json");
-$client->setScopes(Google_Service_Sheets::SPREADSHEETS);
-
-$service = new Google_Service_Sheets($client);
-$spreadsheet_id = $_ENV['SPREADSHEET_ID'];
-$response = $service->spreadsheets->get($spreadsheet_id);
-echo $response->properties->title; // タイトル
-
-
+$indexController->index();
