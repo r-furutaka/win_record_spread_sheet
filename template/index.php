@@ -6,6 +6,7 @@
     <title>マベスナ勝敗記録</title>
 </head>
 <body>
+    <p><?= htmlspecialchars($data['message'], ENT_QUOTES, 'UTF-8') ?></p>
     <h2>対戦記録</h2>
     <form action="" method="post">
         <input type="hidden" name="action" value="add_record">
@@ -51,6 +52,5 @@
                 Title: <?= htmlspecialchars($sheet->properties->title, ENT_QUOTES, 'UTF-8') ?></li>
         <?php endforeach; ?>
     </ul>
-    <p><?= htmlspecialchars($data['message'], ENT_QUOTES, 'UTF-8') ?></p>
 </body>
 </html>

@@ -6,7 +6,6 @@ use Google\Client;
 class IndexController
 {
     private $service;
-    private $spreadsheetId;
     private $sheets;
     private $viewData;
 
@@ -16,31 +15,23 @@ class IndexController
         $dotenv = Dotenv::createImmutable('../');
         $dotenv->load();
 
-        $this->spreadsheetId = $_ENV['SPREADSHEET_ID'];
-
-        $client = new Client();
-        $client->setAuthConfig("../google-api-key.json");
-        $client->setScopes(Google_Service_Sheets::SPREADSHEETS);
-
-        $this->service = new Google_Service_Sheets($client);
+        $spreadsheetId = $_ENV['SPREADSHEET_ID'];
+        $this->service = new GoogleSpreadSheetService($spreadsheetId);
 
         // スプレッドシートの情報を取得
-        $response = $this->service->spreadsheets->get($this->spreadsheetId);
-        $this->sheets = $response->getSheets();
+        $this->sheets = $this->service->getSheets();
     }
     /**
      * スプレッドシートの情報を取得し、デッキタイプの一覧を表示するメソッド
      */
     public function index()
     {
-        $message = '';
-
         // 新しいシートの名前
         $newSheetTitle = 'Decktype';
-        $result = $this->addSheet($newSheetTitle, 1);
+        $result = $this->service->addSheet($newSheetTitle, 1);
         if ($result) {
-            $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
             $message = "新しいシートが追加されました: $newSheetTitle";
+            $this->addViewData('message', $message);
         }
         // デッキタイプの一覧を取得
         $decktypes = $this->getDeckTypes();
@@ -48,7 +39,6 @@ class IndexController
         // テンプレートに渡すデータ
         $this->addViewData('sheets', $this->sheets);
         $this->addViewData('decktypes', $decktypes);
-        $this->addViewData('message', $message);
 
         // テンプレートを読み込む
         $data = $this->viewData;
@@ -64,14 +54,11 @@ class IndexController
         // デッキタイプを追加する処理
         $range = 'Decktype!A1:A';
         $values = [[$decktype]];
-        $body = new Google_Service_Sheets_ValueRange(['values' => $values]);
-
-        $params = ['valueInputOption' => 'RAW'];
-        try {
-            $result = $this->service->spreadsheets_values->append($this->spreadsheetId, $range, $body, $params);
-            echo "デッキタイプ '$decktype' が追加されました。";
-        } catch (Exception $e) {
-            echo "エラーが発生しました: " . $e->getMessage();
+        $result = $this->service->addValues($range, $values);
+        if($result) {
+            $this->addViewData('message', "デッキタイプ「{$decktype}」が追加されました。");
+        } else {
+            $this->addViewData('message', "デッキタイプ「{$decktype}」の追加に失敗しました。");
         }
     }
     /**
@@ -91,62 +78,17 @@ class IndexController
 
         // 対戦記録のシートを追加
         $newSheetTitle = $month;
-        $result = $this->addSheet($newSheetTitle, 4);
+        $result = $this->service->addSheet($newSheetTitle, 4);
 
         // 対戦記録を追加する処理
         $range = $newSheetTitle . '!A1:D';
         $values = [[$myDecktype, $opponentDecktype, $cube, $datetime]];
-        $body = new Google_Service_Sheets_ValueRange(['values' => $values]);
-
-        $params = ['valueInputOption' => 'RAW'];
-        try {
-            $result = $this->service->spreadsheets_values->append($this->spreadsheetId, $range, $body, $params);
-            echo "対戦記録が追加されました。";
-        } catch (Exception $e) {
-            echo "エラーが発生しました: " . $e->getMessage();
+        $result = $this->service->addValues($range, $values);
+        if($result) {
+            $this->addViewData('message', "対戦記録が追加されました。");
+        } else {
+            $this->addViewData('message', "対戦記録の追加に失敗しました。");
         }
-    }
-    /**
-     * 新しいシートを追加するメソッド
-     *
-     * @param string $sheetName シート名
-     * @param int $columnCount 列数
-     * @return bool 成功した場合はtrue、失敗した場合はfalse
-     */
-    public function addSheet(string $sheetName, int $columnCount)
-    {
-        // シートの有無を確認
-        $sheetExists = false;
-        foreach ($this->sheets as $sheet) {
-            if ($sheet->properties->title === $sheetName) {
-                $sheetExists = true;
-                break;
-            }
-        }
-        if ($sheetExists) {
-            return false; // シートが既に存在する場合は何もしない
-        }
-
-        // 新しいシートを追加する処理
-        $requests = [
-            new Google_Service_Sheets_Request([
-                'addSheet' => [
-                    'properties' => [
-                        'title' => $sheetName,
-                        'gridProperties' => [
-                            'rowCount' => 1000,
-                            'columnCount' => $columnCount
-                        ]
-                    ]
-                ]
-            ])
-        ];
-
-        $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
-            'requests' => $requests
-        ]);
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
-        return true;
     }
     /**
      * デッキタイプの一覧を取得するメソッド
@@ -157,15 +99,7 @@ class IndexController
     {
         // デッキタイプの一覧を取得
         $decktypeRange = 'Decktype!A:A';
-        $decktypeResponse = $this->service->spreadsheets_values->get($this->spreadsheetId, $decktypeRange);
-        $decktypes = [];
-        if (null !== $decktypeResponse->getValues()) {
-            foreach ($decktypeResponse->getValues() as $row) {
-                if (isset($row[0])) {
-                    $decktypes[] = $row[0];
-                }
-            }
-        }
+        $decktypes = $this->service->getValues($decktypeRange);
         return $decktypes;
     }
     /**
@@ -176,6 +110,15 @@ class IndexController
      */
     function addViewData(string $key, string|array $value): void
     {
-        $this->viewData[$key] = $value;
+        if(isset($this->viewData[$key])) {
+            if(is_string($this->viewData[$key])) {
+                $this->viewData[$key] .= ', ' . $value;
+            } else if(is_array($this->viewData[$key])) {
+                $this->viewData[$key][] = $value;
+            }
+        }
+        else {
+            $this->viewData[$key] = $value;
+        }
     }
 }
