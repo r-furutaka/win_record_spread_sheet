@@ -12,6 +12,6 @@
   - スプレッドシートのID
   - DateTimeZone
 - google-api-key.json
-  - Google Sheets APIの認証情報のファイルをリネームしたもの
+  - Google Sheets APIの認証情報のファイル（json）をリネームしたもの
   - 取得方法はこちら参考
     - https://www.otsuka-bs.co.jp/web-creation/blog/archive/20230904-03.html  
