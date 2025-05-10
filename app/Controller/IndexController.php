@@ -8,6 +8,7 @@ class IndexController
     private $service;
     private $sheets;
     private $viewData;
+    private $dateUseCase;
 
     public function __construct()
     {
@@ -20,6 +21,12 @@ class IndexController
 
         // スプレッドシートの情報を取得
         $this->sheets = $this->service->getSheets();
+
+        // メッセージの初期化
+        $this->viewData['message'] = '';
+
+        // 日付のユースケースを初期化
+        $this->dateUseCase = new DateUseCase();
     }
     /**
      * スプレッドシートの情報を取得し、デッキタイプの一覧を表示するメソッド
@@ -31,18 +38,34 @@ class IndexController
         $result = $this->service->addSheet($newSheetTitle, 1);
         if ($result) {
             $message = "新しいシートが追加されました: $newSheetTitle";
-            $this->addViewData('message', $message);
+            $this->addMessage($message);
         }
+        // 対戦記録の取得
+        $battleRecords = $this->getBattleRecords();
+
         // デッキタイプの一覧を取得
         $decktypes = $this->getDeckTypes();
 
         // テンプレートに渡すデータ
-        $this->addViewData('sheets', $this->sheets);
-        $this->addViewData('decktypes', $decktypes);
+        $this->viewData['sheets'] = $this->sheets;
+        $this->viewData['decktypes'] = $decktypes;
+        $this->viewData['battleRecords'] = $battleRecords;
 
         // テンプレートを読み込む
         $data = $this->viewData;
         include '../template/index.php';
+    }
+    /**
+     * 対戦記録を取得するメソッド
+     */
+    private function getBattleRecords(): array
+    {
+        $month = $this->dateUseCase->getBattleMonth();
+        $range = $month . '!A:D';
+        $response = $this->service->getValues($range);
+        // 新しい順に並び替え
+        $response = array_reverse($response);
+        return $response;
     }
     /**
      * デッキタイプを追加するメソッド
@@ -56,9 +79,9 @@ class IndexController
         $values = [[$decktype]];
         $result = $this->service->addValues($range, $values);
         if($result) {
-            $this->addViewData('message', "デッキタイプ「{$decktype}」が追加されました。");
+            $this->addMessage("デッキタイプ「{$decktype}」が追加されました。");
         } else {
-            $this->addViewData('message', "デッキタイプ「{$decktype}」の追加に失敗しました。");
+            $this->addMessage("デッキタイプ「{$decktype}」の追加に失敗しました。");
         }
     }
     /**
@@ -71,10 +94,8 @@ class IndexController
     public function addBattleRecord($myDecktype, $opponentDecktype, $cube)
     {
         // 年月で対戦記録を追加する処理
-        // 年月日時間を取得
-        $date = new DateTime('now', new DateTimeZone('Asia/Tokyo')); // 日本時間に設定
-        $month = $date->format('Y-m');
-        $datetime = $date->format('Y-m-d H:i');
+        $month = $this->dateUseCase->getBattleMonth();
+        $datetime = $this->dateUseCase->getBattleDatetime();
 
         // 対戦記録のシートを追加
         $newSheetTitle = $month;
@@ -85,9 +106,9 @@ class IndexController
         $values = [[$myDecktype, $opponentDecktype, $cube, $datetime]];
         $result = $this->service->addValues($range, $values);
         if($result) {
-            $this->addViewData('message', "対戦記録が追加されました。");
+            $this->addMessage("対戦記録が追加されました。");
         } else {
-            $this->addViewData('message', "対戦記録の追加に失敗しました。");
+            $this->addMessage("対戦記録の追加に失敗しました。");
         }
     }
     /**
@@ -95,11 +116,11 @@ class IndexController
      *
      * @return array デッキタイプの一覧
      */
-    function getDeckTypes(): array
+    private function getDeckTypes(): array
     {
         // デッキタイプの一覧を取得
-        $decktypeRange = 'Decktype!A:A';
-        $decktypes = $this->service->getValues($decktypeRange);
+        $range = 'Decktype!A:A';
+        $decktypes = $this->service->getValues($range);
         return $decktypes;
     }
     /**
@@ -108,14 +129,11 @@ class IndexController
      * @param string $key キー
      * @param string|array $value 値
      */
-    function addViewData(string $key, string|array $value): void
+    private function addMessage(string $value): void
     {
-        if(isset($this->viewData[$key])) {
-            if(is_string($this->viewData[$key])) {
-                $this->viewData[$key] .= ', ' . $value;
-            } else if(is_array($this->viewData[$key])) {
-                $this->viewData[$key][] = $value;
-            }
+        $key = 'message';
+        if(isset($this->viewData[$key]) && $this->viewData[$key] !== '') {
+            $this->viewData[$key] .= ', ' . $value;
         }
         else {
             $this->viewData[$key] = $value;

@@ -7,19 +7,20 @@
 </head>
 <body>
     <p><?= htmlspecialchars($data['message'], ENT_QUOTES, 'UTF-8') ?></p>
-    <h2>対戦記録</h2>
     <form action="" method="post">
         <input type="hidden" name="action" value="add_record">
         <label for="my_decktype">自分:</label>
         <select id="my_decktype" name="my_decktype" required>
             <?php foreach ($data['decktypes'] as $decktype): ?>
-                <option value="<?= htmlspecialchars($decktype, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($decktype, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php $value = htmlspecialchars($decktype[0], ENT_QUOTES, 'UTF-8'); ?>
+                <option value="<?= $value ?>"><?= $value ?></option>
             <?php endforeach; ?>
         </select>
         <label for="opponent_decktype">相手:</label>
         <select id="opponent_decktype" name="opponent_decktype" required>
             <?php foreach ($data['decktypes'] as $decktype): ?>
-                <option value="<?= htmlspecialchars($decktype, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($decktype, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php $value = htmlspecialchars($decktype[0], ENT_QUOTES, 'UTF-8'); ?>
+                <option value="<?= $value ?>"><?= $value ?></option>
             <?php endforeach; ?>
         </select>
         <label for="cube">キューブ:</label>
@@ -37,13 +38,34 @@
         <button type="submit">記録</button>
     </form>
     <hr>
-    <h2>デッキタイプの追加</h2>
     <form action="" method="post">
         <input type="hidden" name="action" value="add_decktype">
         <label for="decktype">デッキタイプ名:</label>
         <input type="text" id="decktype" name="decktype" required>
         <button type="submit">追加</button>
     </form>
+    <hr>
+    <table border="1" style="border-collapse: collapse;">
+        <caption>対戦記録</caption>
+        <thead>
+            <tr>
+                <th>自分</th>
+                <th>相手</th>
+                <th>キューブ</th>
+                <th>日時</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($data['battleRecords'] as $record): ?>
+                <tr>
+                    <td><?= htmlspecialchars($record[0], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($record[1], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($record[2], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($record[3], ENT_QUOTES, 'UTF-8') ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
     <hr>
     <h2>System</h2>
     <ul>

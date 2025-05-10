@@ -2,6 +2,7 @@
 require __DIR__.'/../vendor/autoload.php';
 require __DIR__.'/../app/Controller/IndexController.php';
 require __DIR__.'/../app/Services/GoogleSpreadSheetService.php';
+require __DIR__.'/../app/UseCases/DateUseCase.php';
 
 $indexController = new IndexController();
 

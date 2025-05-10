@@ -29,15 +29,11 @@ class GoogleSpreadSheetService
     public function getValues($range)
     {
         $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
-        $types = [];
+        $values = [];
         if (null !== $response->getValues()) {
-            foreach ($response->getValues() as $row) {
-                if (isset($row[0])) {
-                    $types[] = $row[0];
-                }
-            }
+            $values = $response->getValues();
         }
-        return $types;
+        return $values;
     }
     public function addSheet(string $sheetName, int $columnCount)
     {
