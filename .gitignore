@@ -1,4 +1,4 @@
 /vendor/
 .env
-.vscode/
+/.vscode/
 google-api-key.json
